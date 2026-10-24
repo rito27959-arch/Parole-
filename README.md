@@ -1,5 +1,59 @@
 # Parole
 
-Application Android native Kotlin pour préparer ses soutenances, avec Groq, Firebase et AdMob.
+Application Android native **Kotlin + Jetpack Compose**, avec jury Groq, authentification et persistance Firebase, et publicités récompensées AdMob. Thèmes clair, sombre et système.
 
-Le projet et les tests sont en cours de création. Aucun secret ne doit être ajouté au dépôt.
+## Parcours implémenté
+
+- Inscription/connexion e-mail, réinitialisation du mot de passe.
+- Import PDF textuel (80 pages, 10 Mo) ou texte collé (100 000 caractères).
+- Préparation BTS/Licence/Master, jury bienveillant/exigeant.
+- Enregistrement AAC, pause/reprise, permissions microphone, arrêt en arrière-plan.
+- Transcription Groq Whisper, correction manuelle avant envoi, réponses écrites.
+- Questions contextuelles et retours Groq, citations de pages validées.
+- Historique persistant Firestore, cache privé par utilisateur, brouillons locaux et reprise.
+- Bilan, réécoute locale, partage de texte, suppression des projets et du compte.
+- UMP, annonces de test en bêta, vérification SSV des récompenses en production.
+
+**Les données de démonstration sont uniquement dans les tests Android. L’application n’invente ni séance, ni score, ni réponse IA.** Sans configuration du cloud, l’interface affiche explicitement le service à activer.
+
+## Construire
+
+JDK 17, SDK Android 36, Gradle 8.13 :
+
+```sh
+./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+```
+
+APK : `app/build/outputs/apk/debug/app-debug.apk` (signature de développement, annonces Google de test).
+
+GitHub Actions `Parole · Build et tests` exécute les tests serveur, lint/unitaires Android, construit l’APK, puis lance un émulateur pour les tests Compose et les captures en clair, sombre et grandes polices.
+
+## Activer Firebase et le serveur
+
+Voir [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). L’API n’autorise aucune séance sans Firebase valide et une clé Groq configurée.
+
+Le projet n’embarque **aucune clé Groq**, aucun compte de service ni clé de signature. Les identifiants AdMob utilisés par défaut sont les identifiants de test Google.
+
+Deux méthodes pour configurer Firebase Android :
+
+1. `app/google-services.json` fourni au build (ignoré par Git), avec clients `app.parole` et `app.parole.debug` ;
+2. configuration Android publique fournie par votre backend `/config`, chargée au démarrage. Cela permet l’activation Firebase sans reconstruire l’APK.
+
+## Tests
+
+```sh
+cd server
+npm ci
+npm test
+```
+
+La suite API teste les permissions, l’isolation des comptes, les limites, les doublons, la concurrence, les erreurs Groq et les signatures SSV. Ces tests utilisent un fournisseur IA simulé **uniquement dans les tests**, et ne prouvent pas à eux seuls une connexion réelle à Groq/Firebase.
+
+## Limites explicites de cette version
+
+- PDF scannés : message d’erreur explicite et saisie texte alternative ; OCR non intégré.
+- Le jury vocal fonctionne par tours, pas en conversation audio simultanée.
+- Les audios restent sur l’appareil ; la synchronisation cloud porte sur le texte et les bilans.
+- Pas d’abonnement ni de paiement intégré dans cette version.
+- Les annonces de production exigent les vrais identifiants AdMob, UMP et la configuration SSV.
+- La mise en production exige des secrets Firebase, une clé Groq valide et une signature Android privée.

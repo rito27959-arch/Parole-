@@ -1,0 +1,6 @@
+{
+  "name": "parole-api", "version": "1.0.0", "private": true, "type": "module",
+  "engines": {"node": ">=22"},
+  "scripts": {"start": "node src/index.js", "test": "node --test --test-concurrency=1 test/*.test.js", "check": "node --check src/app.js && node --check src/groq.js && node --check src/store.js"},
+  "dependencies": {"fastify": "5.6.1", "@fastify/multipart": "9.2.1", "@fastify/rate-limit": "10.3.0", "firebase-admin": "13.5.0", "zod": "3.25.76", "pdfjs-dist": "5.4.296"}
+}
