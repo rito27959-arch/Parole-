@@ -97,7 +97,12 @@ class ParoleRepository(private val context:Context) {
         return json.decodeFromString(body("/v1/projects","POST",multipart))
     }
     suspend fun importText(title:String,text:String):Project=json.decodeFromString(body("/v1/projects","POST",jsonBody(json.encodeToString(TextProject(title,text)))))
-    suspend fun deleteProject(id:String){body("/v1/projects/$id","DELETE")}
+    suspend fun deleteProject(id:String){
+        val sessions=readCache().sessions.filter{it.projectId==id}
+        body("/v1/projects/$id","DELETE")
+        withContext(Dispatchers.IO){File(context.filesDir,"recordings").listFiles()?.filter{file->sessions.any{file.name.startsWith(it.id+"_")}}?.forEach{it.delete()}}
+        sessions.forEach{clearDraft(it.id)}
+    }
     suspend fun start(request:StartRequest):Session=json.decodeFromString(body("/v1/sessions","POST",jsonBody(json.encodeToString(request))))
     suspend fun answer(id:String,request:AnswerRequest):Session=json.decodeFromString(body("/v1/sessions/$id/answers","POST",jsonBody(json.encodeToString(request))))
     suspend fun transcribe(file:File):Transcript {

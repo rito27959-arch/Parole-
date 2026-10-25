@@ -15,7 +15,7 @@ export function groundedQuestion(raw, pages) {
   return { ...q, sourcePage: pages.some(p => p.number === q.sourcePage) ? q.sourcePage : null };
 }
 export class GroqClient {
-  constructor({ apiKey = process.env.GROQ_API_KEY, model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile', fetcher = fetch } = {}) {
+  constructor({ apiKey = process.env.GROQ_API_KEY, model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b', fetcher = fetch } = {}) {
     this.apiKey = apiKey; this.model = model; this.fetcher = fetcher;
   }
   async json(prompt) {
@@ -25,7 +25,8 @@ export class GroqClient {
       response = await this.fetcher('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST', signal: AbortSignal.timeout(60000),
         headers: { Authorization: `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: this.model, temperature: 0.3, max_completion_tokens: 1600,
+        body: JSON.stringify({ model: this.model, temperature: 0.3, max_completion_tokens: 3000,
+          ...(this.model.startsWith('openai/gpt-oss-') ? {reasoning_effort:'low',reasoning_format:'hidden'} : {}),
           response_format: { type: 'json_object' }, messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: prompt }] })
       });
     } catch { throw new ServiceError(504, 'Le jury met trop de temps à répondre. Réessayez.', 'AI_TIMEOUT'); }

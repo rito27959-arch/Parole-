@@ -57,3 +57,15 @@ La suite API teste les permissions, l’isolation des comptes, les limites, les 
 - Pas d’abonnement ni de paiement intégré dans cette version.
 - Les annonces de production exigent les vrais identifiants AdMob, UMP et la configuration SSV.
 - La mise en production exige des secrets Firebase, une clé Groq valide et une signature Android privée.
+
+## Vérifications d’intégration Firebase
+
+Les émulateurs officiels testent Firebase Auth, la persistance Firestore, les transactions, les règles d’accès et la suppression du compte. Aucun compte réel ni secret n’est utilisé :
+
+```sh
+npm ci --prefix server
+npm ci --prefix qa --ignore-scripts
+qa/node_modules/.bin/firebase emulators:exec --only auth,firestore --project demo-parole-ci 'node --test server/integration/firebase.test.js'
+```
+
+JDK 21 est nécessaire pour les émulateurs Firebase. Le build Android utilise JDK 17. Les outils de `qa/` restent réservés aux tests et ne sont pas inclus dans le serveur déployé.

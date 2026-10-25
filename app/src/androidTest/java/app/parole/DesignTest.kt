@@ -21,7 +21,24 @@ class DesignTest {
     private val question=Question("Pourquoi avoir choisi le téléphone pour le suivi GPS ?",18,"Architecture")
     private val answer=Answer("a",question,"Nous avons choisi le téléphone pour limiter les coûts de matériel.",42000,Feedback(listOf("Le choix est clairement expliqué."),listOf("Précisez les limites de la localisation sur téléphone."),4,3,4,"limiter les coûts de matériel"))
     private fun state(screen:Screen,appearance:Appearance)=UiState(screen=screen,appearance=appearance,configured=true,signedIn=true,name="Miguel",projects=listOf(project),selectedProject=project,account=Account(2,0,true),mediaConsent=true,session=Session("fixture-session",project.id,currentQuestion=question,answers=if(screen==Screen.REPORT)listOf(answer)else emptyList(),status=if(screen==Screen.REPORT)"completed"else"active"))
-    private fun capture(name:String){compose.waitForIdle();val bitmap=compose.onNodeWithTag("app_root").captureToImage().asAndroidBitmap();val dir=File(InstrumentationRegistry.getInstrumentation().targetContext.getExternalFilesDir(null),"screenshots").apply{mkdirs()};File(dir,"$name.png").outputStream().use{bitmap.compress(Bitmap.CompressFormat.PNG,100,it)}}
+    private fun capture(name:String){
+        compose.waitForIdle()
+        val bitmap=compose.onNodeWithTag("app_root").captureToImage().asAndroidBitmap()
+        val context=InstrumentationRegistry.getInstrumentation().targetContext
+        // UTP uninstalls the test app after running. Public test media survives that cleanup.
+        if(android.os.Build.VERSION.SDK_INT>=29){
+            val values=android.content.ContentValues().apply{
+                put(android.provider.MediaStore.Images.Media.DISPLAY_NAME,"$name.png")
+                put(android.provider.MediaStore.Images.Media.MIME_TYPE,"image/png")
+                put(android.provider.MediaStore.Images.Media.RELATIVE_PATH,"Pictures/ParoleTests")
+            }
+            val uri=checkNotNull(context.contentResolver.insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,values))
+            checkNotNull(context.contentResolver.openOutputStream(uri)).use{bitmap.compress(Bitmap.CompressFormat.PNG,100,it)}
+        }else{
+            val dir=File(context.getExternalFilesDir(null),"screenshots").apply{mkdirs()}
+            File(dir,"$name.png").outputStream().use{bitmap.compress(Bitmap.CompressFormat.PNG,100,it)}
+        }
+    }
     @Test fun homeLight(){compose.setContent{ParoleUi(state(Screen.HOME,Appearance.LIGHT),UiActions())};compose.onNodeWithTag("new_project").assertIsDisplayed();capture("01-home-light")}
     @Test fun homeDark(){compose.setContent{ParoleUi(state(Screen.HOME,Appearance.DARK),UiActions())};compose.onNodeWithText("Les idées sont là.\nFaites-les entendre.").assertIsDisplayed();capture("02-home-dark")}
     @Test fun preparation(){compose.setContent{ParoleUi(state(Screen.PREPARE,Appearance.LIGHT),UiActions())};compose.onNodeWithText("Commencer la séance").performScrollTo().assertIsEnabled();capture("03-prepare-light")}
@@ -32,4 +49,5 @@ class DesignTest {
     @Test fun emptyStateDoesNotShowInventedHistory(){compose.setContent{ParoleUi(UiState(),UiActions())};compose.onNodeWithText("Votre premier oral commence ici").assertExists();compose.onNodeWithText("Soutenance Nextfleet").assertDoesNotExist();capture("08-empty-state")}
     @Test fun navigationActuallyChangesScreen(){compose.setContent{var s by remember{mutableStateOf(state(Screen.HOME,Appearance.LIGHT))};ParoleUi(s,UiActions(navigate={s=s.copy(screen=it)}))};compose.onNodeWithContentDescription("Progrès").performClick();compose.onNodeWithText("Vos progrès").assertIsDisplayed()}
     @Test fun typingAnswerEnablesSend(){compose.setContent{var s by remember{mutableStateOf(state(Screen.SESSION,Appearance.DARK))};ParoleUi(s,UiActions(draft={s=s.copy(draft=it)}))};compose.onNodeWithTag("answer_input").performScrollTo().performTextInput("Mon choix repose sur le coût.");compose.onNodeWithText("Envoyer ma réponse").performScrollTo().assertIsEnabled()}
+    @Test fun answerCannotBeSentWithoutConsent(){compose.setContent{ParoleUi(state(Screen.SESSION,Appearance.DARK).copy(mediaConsent=false,draft="Ma réponse personnelle."),UiActions())};compose.onNodeWithText("Envoyer ma réponse").performScrollTo().assertIsNotEnabled()}
 }

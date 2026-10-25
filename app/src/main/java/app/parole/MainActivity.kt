@@ -7,6 +7,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.*
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.SystemBarStyle
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
 import androidx.core.content.ContextCompat
@@ -24,6 +26,8 @@ class MainActivity:ComponentActivity(){
     override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);enableEdgeToEdge();val ads=AdController(this);ads.initialize()
         setContent{
             val vm:ParoleViewModel=viewModel();val state by vm.state.collectAsStateWithLifecycle();val scope=rememberCoroutineScope()
+            val dark=state.screen==Screen.SESSION||state.appearance==Appearance.DARK||(state.appearance==Appearance.SYSTEM&&isSystemInDarkTheme())
+            SideEffect { val bar=if(dark)SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)else SystemBarStyle.light(android.graphics.Color.TRANSPARENT,android.graphics.Color.TRANSPARENT);enableEdgeToEdge(statusBarStyle=bar,navigationBarStyle=bar) }
             val pdf=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()){uri->if(uri!=null)vm.importPdf(uri)}
             val microphone=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()){granted->if(granted)vm.startRecording()else vm.error("Autorisez le microphone dans les réglages Android, ou écrivez votre réponse.")}
             val owner=LocalLifecycleOwner.current

@@ -131,8 +131,8 @@ class UiActions(
         Text("2 minutes maximum par réponse",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant,modifier=Modifier.align(Alignment.CenterHorizontally))
     } else {
         if(state.draft.isBlank())PrimaryButton("Répondre à voix haute",a.record,enabled=!state.busy&&state.mediaConsent,icon=Icons.Rounded.Mic)
-        else PrimaryButton("Envoyer ma réponse",a.send,enabled=!state.busy&&state.draft.trim().length>=3,icon=Icons.Rounded.Check)
-        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly){TextButton(onClick=a.repeat,enabled=!state.busy){Icon(Icons.AutoMirrored.Rounded.VolumeUp,null,Modifier.size(18.dp));Spacer(Modifier.width(6.dp));Text("Réécouter")};if(state.draft.isNotBlank())TextButton(onClick=a.record,enabled=!state.busy){Icon(Icons.Rounded.Mic,null,Modifier.size(18.dp));Spacer(Modifier.width(6.dp));Text("Réenregistrer")}}
+        else PrimaryButton("Envoyer ma réponse",a.send,enabled=!state.busy&&state.mediaConsent&&state.draft.trim().length>=3,icon=Icons.Rounded.Check)
+        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly){TextButton(onClick=a.repeat,enabled=!state.busy){Icon(Icons.AutoMirrored.Rounded.VolumeUp,null,Modifier.size(18.dp));Spacer(Modifier.width(6.dp));Text("Réécouter")};if(state.draft.isNotBlank())TextButton(onClick=a.record,enabled=!state.busy&&state.mediaConsent){Icon(Icons.Rounded.Mic,null,Modifier.size(18.dp));Spacer(Modifier.width(6.dp));Text("Réenregistrer")}}
     }
     OutlinedTextField(state.draft,a.draft,label={Text(if(state.lastAudio!=null)"Votre transcription"else"Ou écrire votre réponse")},modifier=Modifier.fillMaxWidth().heightIn(min=130.dp).testTag("answer_input"),minLines=3,enabled=!state.recording&&!state.busy,shape=RoundedCornerShape(20.dp))
     if(state.lastAudio!=null&&!state.recording)Row{TextButton(onClick=a.play){Text("Écouter mon audio")};TextButton(onClick=a.transcribe,enabled=!state.busy){Text("Retranscrire")}}

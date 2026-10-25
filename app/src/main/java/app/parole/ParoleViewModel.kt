@@ -28,7 +28,7 @@ class ParoleViewModel(application:Application):AndroidViewModel(application) {
     fun notice(message:String){mutable.update{it.copy(notice=message)}}
     fun appearance(value:Appearance){repository.appearance=value;mutable.update{it.copy(appearance=value)}}
     fun speech(value:Boolean){repository.speechEnabled=value;mutable.update{it.copy(speechEnabled=value)};if(!value)voice.silence()}
-    fun consent(value:Boolean){repository.mediaConsent=value;mutable.update{it.copy(mediaConsent=value)}}
+    fun consent(value:Boolean){if(!value&&state.value.recording){ticker?.cancel();voice.cancel();mutable.update{it.copy(recording=false,paused=false,amplitude=0f)}};repository.mediaConsent=value;mutable.update{it.copy(mediaConsent=value)}}
     fun configure(url:String){val trimmed=url.trim().trimEnd('/');if(trimmed.isNotBlank()&&(!trimmed.startsWith("https://")||runCatching{java.net.URI(trimmed).host}.getOrNull().isNullOrBlank())){error("Utilisez une adresse HTTPS valide.");return};repository.apiUrl=trimmed;mutable.update{it.copy(apiUrl=trimmed,configured=repository.configured,notice="Adresse du serveur enregistrée.")}}
     private fun task(block:suspend()->Unit){if(state.value.busy)return;mutable.update{it.copy(busy=true,error=null)};viewModelScope.launch{try{block()}catch(e:CancellationException){throw e}catch(e:Exception){mutable.update{it.copy(error=friendly(e))}}finally{mutable.update{it.copy(busy=false)}}}}
     private fun friendly(e:Exception):String=when(e){is ApiException->e.message?:"Service indisponible";is java.net.UnknownHostException->"Connexion Internet indisponible. Vos données locales sont conservées.";is java.net.SocketTimeoutException->"Le serveur met trop de temps à répondre. Réessayez.";is com.google.firebase.auth.FirebaseAuthInvalidCredentialsException->"Vérifiez l’adresse e-mail et le mot de passe.";is com.google.firebase.auth.FirebaseAuthUserCollisionException->"Cette adresse possède déjà un compte.";is com.google.firebase.auth.FirebaseAuthWeakPasswordException->"Choisissez un mot de passe d’au moins 8 caractères.";is com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException->"Reconnectez-vous avant de supprimer votre compte.";else->e.message?.takeIf{it.length<180}?:"Une erreur est survenue. Réessayez."}
@@ -40,11 +40,12 @@ class ParoleViewModel(application:Application):AndroidViewModel(application) {
     fun deleteAccount(password:String){task{repository.deleteAccount(password);ticker?.cancel();voice.cancel();voice.silence();mutable.update{UiState(appearance=it.appearance,apiUrl=it.apiUrl,configured=it.configured,notice="Votre compte a été supprimé.")}}}
     fun checkServer(){task{repository.health();repository.initializeCloud();mutable.update{it.copy(configured=repository.configured,serverStatus="Connecté et configuré",notice="Le serveur répond correctement.")}}}
     fun newProject(){navigate(if(!state.value.signedIn)Screen.AUTH else Screen.IMPORT)}
-    fun importPdf(uri:Uri){task{val project=repository.importPdf(uri);loadRemote();prepare(project)}}
-    fun importText(title:String,text:String){task{val project=repository.importText(title,text);loadRemote();prepare(project)}}
+    private fun requireConsent(){if(!state.value.mediaConsent)throw ApiException(403,"CONSENT_REQUIRED","Autorisez le traitement par l’IA avant d’envoyer votre contenu.")}
+    fun importPdf(uri:Uri){task{requireConsent();val project=repository.importPdf(uri);loadRemote();prepare(project)}}
+    fun importText(title:String,text:String){task{requireConsent();val project=repository.importText(title,text);loadRemote();prepare(project)}}
     fun prepare(project:Project,rewarded:Boolean=false){startRequest=null;mutable.update{it.copy(selectedProject=project,screen=Screen.PREPARE,rewarded=rewarded,error=null)}}
     fun configureSession(level:String=state.value.level,minutes:Int=state.value.minutes,jury:String=state.value.jury){startRequest=null;mutable.update{it.copy(level=level,minutes=minutes,jury=jury)}}
-    fun start(){task{val s=state.value;val project=s.selectedProject?:return@task
+    fun start(){task{requireConsent();val s=state.value;val project=s.selectedProject?:return@task
         val req=startRequest?:StartRequest(project.id,UUID.randomUUID().toString(),s.level,s.minutes,s.jury,if(s.minutes==5)4 else 6,s.rewarded).also{startRequest=it}
         var session=repository.start(req)
         repeat(8){if(session.status=="preparing"){delay(1500);session=repository.session(session.id)}}
@@ -64,10 +65,10 @@ class ParoleViewModel(application:Application):AndroidViewModel(application) {
     fun pauseRecording(){if(!state.value.recording||state.value.paused)return;voice.pause();mutable.update{it.copy(paused=true,amplitude=0f)}}
     fun togglePause(){if(state.value.paused){runCatching{voice.resume()}.onSuccess{mutable.update{it.copy(paused=false)}}.onFailure{error("Impossible de reprendre. Terminez cet enregistrement.")}}else pauseRecording()}
     fun stopRecording(){ticker?.cancel();val duration=voice.elapsed();val file=runCatching{voice.stop()}.getOrElse{error("Enregistrement trop court. Réessayez.");null};mutable.update{it.copy(recording=false,paused=false,elapsedMs=duration,amplitude=0f,lastAudio=file?.path)};if(file!=null)transcribe()}
-    fun transcribe(){val file=state.value.lastAudio?.let{File(it)}?:return;task{val result=repository.transcribe(file);if(result.text.isBlank())throw ApiException(422,"NO_SPEECH","Aucune parole reconnue. Réécoutez l’audio ou écrivez votre réponse.");draft(result.text)}}
+    fun transcribe(){val file=state.value.lastAudio?.let{File(it)}?:return;task{requireConsent();val result=repository.transcribe(file);if(result.text.isBlank())throw ApiException(422,"NO_SPEECH","Aucune parole reconnue. Réécoutez l’audio ou écrivez votre réponse.");draft(result.text)}}
     fun playAudio(){state.value.lastAudio?.let{runCatching{voice.play(File(it))}.onFailure{error("Impossible de relire cet audio.")}}}
     fun repeatQuestion(){state.value.session?.currentQuestion?.let{voice.speak(it.question)}}
-    fun submitAnswer(){task{val s=state.value;val session=s.session?:return@task;val updated=repository.answer(session.id,AnswerRequest(answerRequestId,session.answers.size,s.draft.trim(),s.elapsedMs));repository.clearDraft(session.id);val audio=s.lastAudio
+    fun submitAnswer(){task{requireConsent();val s=state.value;val session=s.session?:return@task;val updated=repository.answer(session.id,AnswerRequest(answerRequestId,session.answers.size,s.draft.trim(),s.elapsedMs));repository.clearDraft(session.id);val audio=s.lastAudio
         if(audio!=null){val saved=File(getApplication<Application>().filesDir,"recordings/${session.id}_${session.answers.size}.m4a");File(audio).renameTo(saved)}
         enterSession(updated);loadRemote()
     }}

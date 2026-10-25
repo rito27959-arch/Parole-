@@ -1,0 +1,1 @@
+{"name":"parole-ci-tools","private":true,"version":"1.0.0","description":"Firebase emulators for integration tests only","devDependencies":{"firebase-tools":"15.34.1"}}

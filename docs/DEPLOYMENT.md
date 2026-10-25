@@ -16,7 +16,7 @@ Créer un compte de service dédié pour le backend avec les droits nécessaires
 - `FIREBASE_PROJECT_ID` : identifiant du projet.
 - `FIREBASE_SERVICE_ACCOUNT_JSON` : compte de service JSON, variable secrète.
 - `FIREBASE_WEB_API_KEY` et `FIREBASE_ANDROID_APP_ID` : configuration publique de l’application Android bêta, pour `/config`.
-- `GROQ_MODEL` : `llama-3.3-70b-versatile` par défaut.
+- `GROQ_MODEL` : `openai/gpt-oss-120b` par défaut.
 - `GROQ_TRANSCRIPTION_MODEL` : `whisper-large-v3-turbo`.
 - `FREE_DAILY_SESSIONS` : 3 par défaut.
 - `ADMOB_REWARDED_AD_UNIT` : vrai identifiant du bloc récompensé, vide tant que non activé.
