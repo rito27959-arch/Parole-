@@ -1,5 +1,7 @@
 # Parole
 
+[![Build et tests](https://github.com/rito27959-arch/Parole-/actions/workflows/android.yml/badge.svg)](https://github.com/rito27959-arch/Parole-/actions/workflows/android.yml)
+
 Application Android native **Kotlin + Jetpack Compose**, avec jury Groq, authentification et persistance Firebase, et publicités récompensées AdMob. Thèmes clair, sombre et système.
 
 ## Parcours implémenté
@@ -7,7 +9,7 @@ Application Android native **Kotlin + Jetpack Compose**, avec jury Groq, authent
 - Inscription/connexion e-mail, réinitialisation du mot de passe.
 - Import PDF textuel (80 pages, 10 Mo) ou texte collé (100 000 caractères).
 - Préparation BTS/Licence/Master, jury bienveillant/exigeant.
-- Enregistrement AAC, pause/reprise, permissions microphone, arrêt en arrière-plan.
+- Enregistrement AAC, pause/reprise, permissions microphone, mise en pause en arrière-plan.
 - Transcription Groq Whisper, correction manuelle avant envoi, réponses écrites.
 - Questions contextuelles et retours Groq, citations de pages validées.
 - Historique persistant Firestore, cache privé par utilisateur, brouillons locaux et reprise.
@@ -69,3 +71,17 @@ qa/node_modules/.bin/firebase emulators:exec --only auth,firestore --project dem
 ```
 
 JDK 21 est nécessaire pour les émulateurs Firebase. Le build Android utilise JDK 17. Les outils de `qa/` restent réservés aux tests et ne sont pas inclus dans le serveur déployé.
+
+## Captures de l’interface native
+
+Captures produites par les tests Android sur émulateur. Les projets et bilans visibles ici sont des données fictives de test. L’application livrée démarre sans historique prérempli.
+
+| Accueil clair | Accueil sombre |
+| --- | --- |
+| ![Accueil clair](docs/screenshots/01-home-light.png) | ![Accueil sombre](docs/screenshots/02-home-dark.png) |
+
+| Séance vocale | Bilan |
+| --- | --- |
+| ![Séance vocale](docs/screenshots/04-session-dark.png) | ![Bilan](docs/screenshots/05-report-light.png) |
+
+[Bilan des vérifications et limites de la bêta](docs/VALIDATION.md).
