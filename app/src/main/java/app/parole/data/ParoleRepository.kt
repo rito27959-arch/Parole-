@@ -28,6 +28,10 @@ class ApiException(val status:Int,val apiCode:String,message:String):IOException
 class ParoleRepository(private val context:Context) {
     val json=Json {ignoreUnknownKeys=true;encodeDefaults=true}
     private val prefs=context.getSharedPreferences("parole",Context.MODE_PRIVATE)
+    val welcomeCompleted get()=prefs.getBoolean("welcome_completed_v1",false)
+    val preferredLevel get()=prefs.getString("preferred_level","BTS")?:"BTS"
+    val preferredJury get()=prefs.getString("preferred_jury","Bienveillant")?:"Bienveillant"
+    fun finishWelcome(level:String,jury:String){prefs.edit().putBoolean("welcome_completed_v1",true).putString("preferred_level",level).putString("preferred_jury",jury).apply()}
     private val client=OkHttpClient.Builder().connectTimeout(15,TimeUnit.SECONDS).readTimeout(90,TimeUnit.SECONDS).callTimeout(110,TimeUnit.SECONDS).build()
     val auth:FirebaseAuth? get()=if(FirebaseApp.getApps(context).isNotEmpty()) FirebaseAuth.getInstance() else null
     var apiUrl:String

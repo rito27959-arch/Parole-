@@ -14,8 +14,8 @@ android {
         applicationId = "app.parole"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "API_BASE_URL", quoted(config("PAROLE_API_URL")))
         buildConfigField("String", "ADMOB_REWARDED_ID", quoted(config("ADMOB_REWARDED_ID", "ca-app-pub-3940256099942544/5224354917")))
@@ -51,6 +51,7 @@ android {
 dependencies {
     implementation(platform("androidx.compose:compose-bom:2025.06.01"))
     implementation("androidx.core:core-ktx:1.16.0")
+    implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.activity:activity-compose:1.10.1")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.1")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.1")

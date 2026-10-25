@@ -29,7 +29,7 @@ class UiActions(
     val draft:(String)->Unit={},val record:()->Unit={},val pause:()->Unit={},val stop:()->Unit={},val send:()->Unit={},val repeat:()->Unit={},val play:()->Unit={},val transcribe:()->Unit={},
     val replay:(Int)->Unit={},val ad:()->Unit={},val appearance:(Appearance)->Unit={},val speech:(Boolean)->Unit={},val consent:(Boolean)->Unit={},
     val configure:(String)->Unit={},val serverCheck:()->Unit={},val login:(String,String,String,Boolean)->Unit={_,_,_,_->},val resetPassword:(String)->Unit={},
-    val signOut:()->Unit={},val deleteAccount:(String)->Unit={},val deleteProject:(Project)->Unit={},val dismiss:()->Unit={},val privacy:()->Unit={},val export:(Session)->Unit={}
+    val signOut:()->Unit={},val deleteAccount:(String)->Unit={},val deleteProject:(Project)->Unit={},val dismiss:()->Unit={},val privacy:()->Unit={},val welcome:()->Unit={},val export:(Session)->Unit={}
 )
 @Composable fun ParoleUi(state:UiState,actions:UiActions){
     val rootScreens=setOf(Screen.HOME,Screen.PROGRESS,Screen.SETTINGS)
@@ -198,7 +198,8 @@ class UiActions(
         SoftCard(Modifier.fillMaxWidth()){state.projects.forEach{p->SettingRow(p.title,"${p.pageCount} pages"){IconButton(onClick={deleteProject=p}){Icon(Icons.Rounded.DeleteOutline,"Supprimer ${p.title}",tint=MaterialTheme.colorScheme.error)}}}}
     }
     if(state.signedIn){OutlinedButton(onClick=a.signOut,enabled=!state.busy,modifier=Modifier.fillMaxWidth().heightIn(min=50.dp)){Text("Se déconnecter")};TextButton(onClick={deletePassword="";delete=true},modifier=Modifier.fillMaxWidth()){Text("Supprimer mon compte et mes données",color=MaterialTheme.colorScheme.error)}}
-    Text("Parole · 1.0.0\nUn espace pour trouver votre voix.",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant,textAlign=TextAlign.Center,modifier=Modifier.fillMaxWidth())
+    TextButton(onClick=a.welcome,modifier=Modifier.fillMaxWidth()){Text("Revoir la présentation")}
+    Text("Parole · ${app.parole.BuildConfig.VERSION_NAME}\nUn espace pour trouver votre voix.",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant,textAlign=TextAlign.Center,modifier=Modifier.fillMaxWidth())
 }
     if(delete)AlertDialog(onDismissRequest={delete=false},title={Text("Supprimer votre compte ?")},text={Column{Text("Vos projets et bilans seront définitivement supprimés. Confirmez avec votre mot de passe.");Spacer(Modifier.height(16.dp));OutlinedTextField(deletePassword,{deletePassword=it},label={Text("Mot de passe")},singleLine=true,visualTransformation=PasswordVisualTransformation(),keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Password))}},confirmButton={TextButton(enabled=deletePassword.isNotBlank(),onClick={delete=false;a.deleteAccount(deletePassword);deletePassword=""}){Text("Supprimer")}},dismissButton={TextButton(onClick={delete=false}){Text("Annuler")}})
     deleteProject?.let{p->AlertDialog(onDismissRequest={deleteProject=null},title={Text("Supprimer ce projet ?")},text={Text("Le rapport et les séances associées seront supprimés.")},confirmButton={TextButton(onClick={deleteProject=null;a.deleteProject(p)}){Text("Supprimer")}},dismissButton={TextButton(onClick={deleteProject=null}){Text("Annuler")}})}

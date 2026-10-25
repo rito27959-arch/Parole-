@@ -1,0 +1,5 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="288dp" android:height="288dp" android:viewportWidth="288" android:viewportHeight="288">
+    <group android:name="voice" android:pivotX="144" android:pivotY="144">
+        <path android:strokeColor="@color/launch_voice" android:strokeWidth="10" android:strokeLineCap="round" android:pathData="M96,134 L96,154 M120,112 L120,176 M144,90 L144,198 M168,112 L168,176 M192,134 L192,154" />
+    </group>
+</vector>

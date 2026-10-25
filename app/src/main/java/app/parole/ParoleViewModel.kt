@@ -16,7 +16,7 @@ import java.util.UUID
 class ParoleViewModel(application:Application):AndroidViewModel(application) {
     val repository=(application as ParoleApplication).repository
     private val voice=VoiceEngine(application)
-    private val mutable=MutableStateFlow(UiState(appearance=repository.appearance,apiUrl=repository.apiUrl,configured=repository.configured,speechEnabled=repository.speechEnabled,mediaConsent=repository.mediaConsent))
+    private val mutable=MutableStateFlow(UiState(appearance=repository.appearance,apiUrl=repository.apiUrl,configured=repository.configured,speechEnabled=repository.speechEnabled,mediaConsent=repository.mediaConsent,level=repository.preferredLevel,jury=repository.preferredJury))
     val state=mutable.asStateFlow()
     private var ticker:Job?=null
     private var answerRequestId=UUID.randomUUID().toString()

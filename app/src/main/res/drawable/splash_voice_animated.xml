@@ -1,0 +1,10 @@
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt" android:drawable="@drawable/splash_voice">
+    <target android:name="voice">
+        <aapt:attr name="android:animation">
+            <set android:ordering="sequentially">
+                <objectAnimator android:propertyName="scaleY" android:valueFrom="0.25" android:valueTo="1.06" android:duration="480" android:interpolator="@android:interpolator/fast_out_slow_in" android:valueType="floatType" />
+                <objectAnimator android:propertyName="scaleY" android:valueFrom="1.06" android:valueTo="1.0" android:duration="240" android:interpolator="@android:interpolator/fast_out_slow_in" android:valueType="floatType" />
+            </set>
+        </aapt:attr>
+    </target>
+</animated-vector>
