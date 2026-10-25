@@ -105,7 +105,7 @@ fun ParoleWelcome(
                                     JourneyRow("2", "Échangez avec le jury", "Parlez ou écrivez, sans vous précipiter.")
                                     JourneyRow("3", "Repartez avec une piste", "Des retours précis pour votre prochain essai.")
                                     Row(Modifier.padding(top = 16.dp, bottom = 12.dp), verticalAlignment = Alignment.Top) {
-                                        Icon(Icons.Rounded.LockOutline, null, Modifier.size(16.dp), tint = c.onSurfaceVariant)
+                                        Icon(Icons.Rounded.Lock, null, Modifier.size(16.dp), tint = c.onSurfaceVariant)
                                         Text("Vous gardez la main. L’envoi de vos contenus à l’IA et l’accès au micro vous seront demandés au moment utile.", Modifier.padding(start = 9.dp), color = c.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                                     }
                                 }
