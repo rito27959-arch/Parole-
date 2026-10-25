@@ -26,7 +26,13 @@ export async function requireOwned(store, uid, collection, id) {
 export async function reserveSession(store, uid, request, dailyLimit) {
   return store.atomic(async tx=>{
     const path=userPath(uid,`sessions/${request.requestId}`), existing=await tx.get(path);
-    if(existing) return { session:existing, created:false };
+    if(existing) {
+      if(existing.status==='preparing'&&existing.busyUntil<Date.now()) {
+        existing.lease=randomUUID();existing.busyUntil=Date.now()+90000;
+        await tx.set(path,existing);return {session:existing,created:true};
+      }
+      return {session:existing,created:false};
+    }
     const day=new Date().toISOString().slice(0,10), walletPath=userPath(uid,'private/wallet');
     const wallet=await tx.get(walletPath) || {day,used:0,credits:0};
     if(wallet.day!==day) {wallet.day=day;wallet.used=0;}
@@ -37,7 +43,7 @@ export async function reserveSession(store, uid, request, dailyLimit) {
       if(wallet.used>=dailyLimit) throw new ServiceError(429,'Vos séances gratuites du jour sont utilisées. Revenez demain ou débloquez une courte séance.','DAILY_LIMIT');
       wallet.used++;
     }
-    const session={id:request.requestId,projectId:request.projectId,level:request.level,minutes:request.minutes,style:request.style,questionCount:request.rewarded?2:request.questionCount,rewarded:request.rewarded,status:'preparing',answers:[],currentQuestion:null,createdAt:new Date().toISOString(),busyUntil:Date.now()+90000};
+    const session={id:request.requestId,projectId:request.projectId,level:request.level,minutes:request.minutes,style:request.style,questionCount:request.rewarded?2:request.questionCount,rewarded:request.rewarded,status:'preparing',lease:randomUUID(),answers:[],currentQuestion:null,createdAt:new Date().toISOString(),busyUntil:Date.now()+90000};
     await tx.set(walletPath,wallet); await tx.set(path,session); return {session,created:true};
   });
 }
@@ -45,7 +51,7 @@ export async function refundSession(store,uid,session) {
   await store.atomic(async tx=>{
     const path=userPath(uid,`sessions/${session.id}`), current=await tx.get(path);
     const walletPath=userPath(uid,'private/wallet'), wallet=await tx.get(walletPath);
-    if(current?.status!=='preparing') return;
+    if(current?.status!=='preparing'||current.lease!==session.lease) return;
     if(wallet) {
       if(session.rewarded) wallet.credits+=2;
       else if(wallet.day===session.createdAt.slice(0,10)) wallet.used=Math.max(0,wallet.used-1);

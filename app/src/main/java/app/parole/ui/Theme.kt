@@ -28,4 +28,4 @@ private val Type=Typography(
     labelLarge=TextStyle(fontFamily=Font,fontSize=15.sp,lineHeight=21.sp,fontWeight=FontWeight.SemiBold),
     labelMedium=TextStyle(fontFamily=Font,fontSize=12.sp,lineHeight=17.sp,fontWeight=FontWeight.Medium)
 )
-@Composable fun ParoleTheme(appearance:Appearance=Appearance.SYSTEM,content:@Composable()->Unit){val dark=appearance==Appearance.DARK||(appearance==Appearance.SYSTEM&&isSystemInDarkTheme());MaterialTheme(colorScheme=if(dark)Dark else Light,typography=Type,content=content)}
+@Composable fun ParoleTheme(appearance:Appearance=Appearance.SYSTEM,content:@Composable () ->Unit){val dark=appearance==Appearance.DARK||(appearance==Appearance.SYSTEM&&isSystemInDarkTheme());MaterialTheme(colorScheme=if(dark)Dark else Light,typography=Type,content=content)}

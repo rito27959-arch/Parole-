@@ -11,7 +11,7 @@ import {createRewardTicket,verifyReward} from './rewards.js';
 const uuid=z.string().uuid();
 const startSchema=z.object({projectId:uuid,requestId:uuid,level:z.enum(['BTS','Licence','Master','Autre']).default('BTS'),minutes:z.union([z.literal(5),z.literal(10),z.literal(15)]).default(10),style:z.enum(['Bienveillant','Exigeant']).default('Bienveillant'),questionCount:z.number().int().min(2).max(8).default(6),rewarded:z.boolean().default(false)});
 const answerSchema=z.object({requestId:uuid,questionIndex:z.number().int().min(0).max(7),text:z.string().trim().min(3).max(8000),durationMs:z.number().int().min(0).max(900000)});
-export async function buildApp({store,groq,verifyToken,verifyAppCheck,ready=true,dailyLimit=3,adUnit='',logger=false,pdfExtractor=extractPdf,firebasePublicConfig=null}) {
+export async function buildApp({store,groq,verifyToken,verifyAppCheck,deleteIdentity=async()=>{},ready=true,dailyLimit=3,adUnit='',logger=false,pdfExtractor=extractPdf,firebasePublicConfig=null}) {
   const app=Fastify({logger,bodyLimit:150000,requestTimeout:120000,trustProxy:false});
   await app.register(multipart,{limits:{fileSize:10*1024*1024,files:1,fields:4,parts:5}});
   await app.register(rateLimit,{global:true,max:60,timeWindow:'1 minute'});
@@ -32,7 +32,7 @@ export async function buildApp({store,groq,verifyToken,verifyAppCheck,ready=true
       if(!ready)throw new ServiceError(503,'Le serveur attend sa configuration Firebase et Groq.','NOT_CONFIGURED');
       const match=/^Bearer (.+)$/.exec(req.headers.authorization||'');
       if(!match)throw new ServiceError(401,'Connectez-vous pour continuer.','UNAUTHENTICATED');
-      try { req.uid=await verifyToken(match[1]); if(!req.uid||typeof req.uid!=='string')throw new Error(); }
+      try { const identity=await verifyToken(match[1]);req.uid=identity.uid;req.authTime=identity.authTime;if(!req.uid||typeof req.uid!=='string')throw new Error(); }
       catch {throw new ServiceError(401,'Votre session a expiré. Reconnectez-vous.','UNAUTHENTICATED');}
       if(verifyAppCheck)try{await verifyAppCheck(req.headers['x-firebase-appcheck']);}catch{throw new ServiceError(403,'Appareil non reconnu.','APP_CHECK_FAILED');}
     });
@@ -64,8 +64,14 @@ export async function buildApp({store,groq,verifyToken,verifyAppCheck,ready=true
       const reserved=await reserveSession(store,req.uid,request,dailyLimit);
       if(!reserved.created){if(reserved.session.status==='preparing')return reply.code(202).send(publicSession(reserved.session));return publicSession(reserved.session);}
       try {
-        const currentQuestion=await groq.first(project,request);const session={...reserved.session,currentQuestion,status:'active',busyUntil:0};
-        await store.set(userPath(req.uid,`sessions/${session.id}`),session);return publicSession(session);
+        const source=reserved.session.projectId===project.id?project:await requireOwned(store,req.uid,'projects',reserved.session.projectId);
+        const currentQuestion=await groq.first(source,reserved.session);
+        return await store.atomic(async tx=>{
+          const path=userPath(req.uid,`sessions/${reserved.session.id}`),current=await tx.get(path);
+          if(current?.lease!==reserved.session.lease)throw new ServiceError(409,'La préparation a été reprise. Réessayez.','LEASE_LOST');
+          const session={...current,currentQuestion,status:'active',busyUntil:0};delete session.lease;
+          await tx.set(path,session);return publicSession(session);
+        });
       }catch(e){await refundSession(store,req.uid,reserved.session);throw e;}
     });
     api.post('/sessions/:id/answers',async req=>{
@@ -96,9 +102,11 @@ export async function buildApp({store,groq,verifyToken,verifyAppCheck,ready=true
     });
     api.post('/rewards/ticket', {config:{rateLimit:{max:6,timeWindow:'1 minute'}}},async req=>{if(!adUnit)throw new ServiceError(503,'Les récompenses ne sont pas encore activées.','REWARDS_DISABLED');return createRewardTicket(store,req.uid);});
     api.delete('/account',async req=>{
+      if(!Number.isFinite(req.authTime)||Math.abs(Date.now()/1000-req.authTime)>300)throw new ServiceError(401,'Reconnectez-vous avant de supprimer votre compte.','RECENT_LOGIN_REQUIRED');
       const sessions=await store.list(userPath(req.uid,'sessions'));
       if(sessions.some(s=>s.busyUntil>Date.now()))throw new ServiceError(409,'Attendez la fin de l’analyse avant de supprimer le compte.','BUSY');
       for(const collection of ['sessions','projects','private'])for(const item of await store.list(userPath(req.uid,collection)))await store.delete(userPath(req.uid,`${collection}/${item.id}`));
+      await deleteIdentity(req.uid);
       return {deleted:true};
     });
   },{prefix:'/v1'});

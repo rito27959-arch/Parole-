@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID,generateKeyPairSync,createSign} from 'node:crypto';
 import {buildApp} from '../src/app.js';
-import {MemoryStore,publicSession} from '../src/store.js';
+import {MemoryStore,publicSession,reserveSession,refundSession} from '../src/store.js';
 import {GroqClient,groundedQuestion} from '../src/groq.js';
 import {verifyReward,createRewardTicket} from '../src/rewards.js';
 const headers={authorization:'Bearer alice'};
@@ -10,7 +10,7 @@ const question={question:'Pourquoi avoir choisi cette architecture ?',sourcePage
 const feedback={strengths:['Choix expliqué.'],improvements:['Donnez un exemple.'],clarity:4,structure:3,precision:3,evidence:'',nextQuestion:question};
 async function setup(overrides={}) {
  const store=new MemoryStore();
- const app=await buildApp({store,groq:{first:async()=>question,review:async(p,s,a,last)=>({...feedback,nextQuestion:last?null:question}),transcribe:async()=>({text:'Une réponse réelle.',duration:4})},verifyToken:async t=>{if(!['alice','bob'].includes(t))throw Error();return t;},...overrides});
+ const app=await buildApp({store,groq:{first:async()=>question,review:async(p,s,a,last)=>({...feedback,nextQuestion:last?null:question}),transcribe:async()=>({text:'Une réponse réelle.',duration:4})},verifyToken:async t=>{if(!['alice','bob'].includes(t))throw Error();return {uid:t,authTime:Math.floor(Date.now()/1000)};},...overrides});
  await app.ready();return {app,store};
 }
 async function project(app){const r=await app.inject({method:'POST',url:'/v1/projects',headers,payload:{title:'Mon rapport',text:'Le projet concerne une application de gestion de flotte automobile. Les téléphones Android assurent le suivi des missions et la synchronisation des données.'}});assert.equal(r.statusCode,200,r.body);return r.json();}
@@ -32,3 +32,8 @@ test('internal lease fields are private',()=>{assert.deepEqual(publicSession({id
 test('Groq errors redact provider body and API secrets',async()=>{const client=new GroqClient({apiKey:'test-secret',fetcher:async()=>new Response('token test-secret',{status:401})});await assert.rejects(()=>client.json('sample'),e=>e.statusCode===502&&!e.message.includes('test-secret'));});
 test('malformed Groq JSON rejected',async()=>{const client=new GroqClient({apiKey:'test',fetcher:async()=>Response.json({choices:[{message:{content:'not json'}}]})});await assert.rejects(()=>client.json('sample'),e=>e.code==='AI_INVALID_RESPONSE');});
 test('signed SSV credited exactly once; spoof rejected',async()=>{const store=new MemoryStore(),{publicKey,privateKey}=generateKeyPairSync('ec',{namedCurve:'prime256v1'});const ticket=await createRewardTicket(store,'alice'),now=Date.now();const data=`ad_network=123&ad_unit=test-ad&custom_data=${ticket.id}&reward_amount=1&reward_item=questions&timestamp=${now}&transaction_id=tx_1&user_id=alice`;const signature=createSign('SHA256').update(data).sign(privateKey).toString('base64url');const url=`/admob/ssv?${data}&signature=${signature}&key_id=1`,options={store,adUnit:'test-ad',getKey:async()=>publicKey,now};assert.equal((await verifyReward(url,options)).credited,true);assert.equal((await verifyReward(url,options)).credited,false);assert.equal((await store.get('users/alice/private/wallet')).credits,2);await assert.rejects(()=>verifyReward(url.replace('user_id=alice','user_id=bob'),options),e=>e.statusCode===403);});
+
+test('account deletion requires a recent login before deleting any data',async()=>{const {app}=await setup({verifyToken:async()=>({uid:'alice',authTime:1})});await project(app);const response=await app.inject({method:'DELETE',url:'/v1/account',headers});assert.equal(response.statusCode,401);assert.equal(response.json().code,'RECENT_LOGIN_REQUIRED');assert.equal((await app.inject({url:'/v1/projects',headers})).json().projects.length,1);await app.close();});
+test('account deletion removes data before deleting Firebase identity',async()=>{let deleted;const {app,store}=await setup({deleteIdentity:async uid=>{assert.equal((await store.list('users/alice/projects')).length,0);assert.equal((await store.list('users/alice/sessions')).length,0);deleted=uid;}});await session(app,await project(app));assert.equal((await app.inject({method:'DELETE',url:'/v1/account',headers})).statusCode,200);assert.equal(deleted,'alice');assert.equal((await store.list('users/alice/private')).length,0);await app.close();});
+
+test('expired preparation resumes without charging a second session',async()=>{const store=new MemoryStore(),request={requestId:randomUUID(),projectId:randomUUID(),level:'BTS',minutes:5,style:'Bienveillant',questionCount:2,rewarded:false};const first=await reserveSession(store,'alice',request,1);await store.set(`users/alice/sessions/${request.requestId}`,{...first.session,busyUntil:1});const retry=await reserveSession(store,'alice',request,1);assert.equal(retry.created,true);assert.notEqual(retry.session.lease,first.session.lease);assert.equal((await store.get('users/alice/private/wallet')).used,1);await refundSession(store,'alice',first.session);assert.equal((await store.get('users/alice/private/wallet')).used,1);assert.ok(await store.get(`users/alice/sessions/${request.requestId}`));await refundSession(store,'alice',retry.session);assert.equal((await store.get('users/alice/private/wallet')).used,0);});

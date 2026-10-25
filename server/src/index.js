@@ -11,7 +11,8 @@ const ready=Boolean(projectId&&process.env.GROQ_API_KEY);
 if(projectId&&!getApps().length)initializeApp({projectId,credential:process.env.FIREBASE_SERVICE_ACCOUNT_JSON?cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON)):applicationDefault()});
 const app=await buildApp({
   ready,firebasePublicConfig:process.env.FIREBASE_WEB_API_KEY&&process.env.FIREBASE_ANDROID_APP_ID?{apiKey:process.env.FIREBASE_WEB_API_KEY,applicationId:process.env.FIREBASE_ANDROID_APP_ID,projectId}:null,store:projectId?new FirestoreStore(getFirestore()):new MemoryStore(),groq:new GroqClient(),
-  verifyToken:async token=>(await getAuth().verifyIdToken(token,true)).uid,
+  verifyToken:async token=>{const identity=await getAuth().verifyIdToken(token,true);return {uid:identity.uid,authTime:identity.auth_time};},
+  deleteIdentity:async uid=>getAuth().deleteUser(uid),
   verifyAppCheck:process.env.REQUIRE_APP_CHECK==='true'?async token=>getAppCheck().verifyToken(token):null,
   dailyLimit:Number(process.env.FREE_DAILY_SESSIONS||3),adUnit:process.env.ADMOB_REWARDED_AD_UNIT||'',
   logger:{level:'info',redact:['req.headers.authorization','req.headers.cookie','req.body','res.body']}

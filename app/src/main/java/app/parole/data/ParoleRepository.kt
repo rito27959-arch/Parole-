@@ -5,6 +5,7 @@ import android.net.Uri
 import app.parole.BuildConfig
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
 import kotlinx.coroutines.Dispatchers
@@ -68,7 +69,14 @@ class ParoleRepository(private val context:Context) {
     suspend fun resetPassword(email:String){requireAuth().sendPasswordResetEmail(email.trim()).await()}
     private fun requireAuth()=auth?:throw ApiException(503,"NOT_CONFIGURED","Firebase n’est pas encore configuré dans cette version.")
     suspend fun signOut(){withContext(Dispatchers.IO){cacheFile().delete();File(context.filesDir,"recordings").deleteRecursively()};prefs.edit().apply{prefs.all.keys.filter{it.startsWith("draft_")}.forEach{remove(it)}}.apply();auth?.signOut()}
-    suspend fun deleteAccount(){body("/v1/account","DELETE");requireAuth().currentUser?.delete()?.await();signOut()}
+    suspend fun deleteAccount(password:String){
+        val user=requireAuth().currentUser?:throw ApiException(401,"UNAUTHENTICATED","Reconnectez-vous pour continuer.")
+        val email=user.email?:throw ApiException(401,"UNAUTHENTICATED","Reconnectez-vous pour continuer.")
+        user.reauthenticate(EmailAuthProvider.getCredential(email,password)).await()
+        user.getIdToken(true).await()
+        body("/v1/account","DELETE")
+        signOut()
+    }
     suspend fun initializeCloud() {
         if(auth!=null||!apiUrl.startsWith("https://"))return
         val config=json.decodeFromString<ServerConfig>(body("/config",authenticated=false)).firebase?:return

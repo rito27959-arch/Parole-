@@ -41,6 +41,6 @@ class VoiceEngine(private val context:Context) {
     fun stop():File? {val device=recorder?:return currentFile;accumulated=elapsed();recorder=null
         try{device.stop()}catch(e:RuntimeException){currentFile?.delete();currentFile=null;throw e}finally{device.release()};return currentFile}
     fun play(file:File,onDone:()->Unit={}){silence();player=MediaPlayer().apply{setDataSource(file.absolutePath);setOnCompletionListener{it.release();player=null;onDone()};prepare();start()}}
-    fun cancel(){runCatching{recorder?.stop()};recorder?.release();recorder=null}
+    fun cancel(){if(recorder!=null){runCatching{recorder?.stop()};recorder?.release();currentFile?.delete();currentFile=null};recorder=null}
     fun close(){cancel();silence();tts?.shutdown();tts=null}
 }
