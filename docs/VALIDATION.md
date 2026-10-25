@@ -24,7 +24,11 @@ https://github.com/rito27959-arch/Parole-/actions/runs/40167450647
 
 ## Activation restante
 
-Le backend n’est pas encore déployé. Le projet Firebase de production, sa configuration Android et les identifiants AdMob réels ne sont pas fournis. Dans l’APK livré, les séances IA attendent cette activation et AdMob utilise les identifiants Google de test. Aucun secret Groq ou compte de service n’est inclus.
+Le backend a été déployé sur Railway le 25 octobre 2026 : https://parole-api-production.up.railway.app. Le déploiement `5f033602-2d46-4d19-bc01-4d0379217cdb` est réussi et suit la branche `main`. La clé Groq est enregistrée comme variable serveur. Vérification HTTPS réelle : `/health` répond 200 avec `configured: false`, `/ready` répond 503, `/config` renvoie `firebase: null` et `/privacy` répond 200.
+
+Le projet Firebase de production et le compte AdMob ne sont pas encore créés : leurs consoles demandent l’acceptation initiale des conditions. Le pays de paiement AdMob doit être confirmé avant inscription. Les séances IA attendent cette activation et AdMob utilise toujours les identifiants Google de test. Aucun secret Groq ou compte de service n’est inclus dans le dépôt ou l’APK.
+
+Les prochains APK de la CI utiliseront l’adresse Railway par défaut, avec surcharge possible par `PAROLE_API_URL`. L’APK du build référencé plus haut demande encore de saisir cette adresse dans Profil > Connexion.
 
 Les émulateurs ne valident pas les permissions du futur compte Firebase de production. Le microphone, la transcription de voix humaines, TalkBack, les appareils physiques et l’affichage réel des annonces UMP/AdMob restent à vérifier avant diffusion publique. Le test de signature SSV utilise une paire de clés de test, pas une publicité facturée.
 

@@ -27,7 +27,9 @@ Créer un compte de service dédié pour le backend avec les droits nécessaires
 
 Le `Dockerfile` racine construit le backend. Lier le dépôt, branche `main`, sans sous-répertoire. Configurer `/health` comme healthcheck, ajouter les variables puis générer un domaine HTTPS. Les données persistantes sont dans Firestore, pas sur le disque Railway.
 
-Dans Android, l’adresse peut être fournie via `PAROLE_API_URL` au build ou dans Profil > Connexion.
+Le service `Parole/parole-api` est déployé à l’adresse https://parole-api-production.up.railway.app et suit déjà `main`. Les variables Groq sont configurées ; Firebase reste à activer. Un healthcheck réussi ne prouve pas que Firebase fonctionne : contrôler `/ready`, puis une véritable inscription et une séance.
+
+La CI bêta utilise cette adresse par défaut. Elle peut être remplacée via `PAROLE_API_URL` au build ou dans Profil > Connexion. Les builds locaux sans cette variable restent sans serveur par défaut, notamment pour les tests isolés.
 
 ## GitHub CI
 
