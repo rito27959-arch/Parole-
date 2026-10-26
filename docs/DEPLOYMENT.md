@@ -2,13 +2,17 @@
 
 ## Firebase
 
-Créer un projet dédié Parole. Activer Authentication > E-mail/Mot de passe et Cloud Firestore. Créer les applications Android `app.parole` (release) et `app.parole.debug` (bêta). Ajouter leurs empreintes de signature quand nécessaire.
+Le projet dédié **Parole**, identifiant `parole-6a0bf`, est créé. Authentication > E-mail/Mot de passe est activé, et les applications Android `app.parole` (release) et `app.parole.debug` (bêta) sont enregistrées. Une création de compte synthétique, une connexion et sa suppression ont été vérifiées contre Firebase Auth en production.
 
-Déployer les règles : `firebase deploy --only firestore:rules,storage --project VOTRE_PROJET`.
+Firestore n’est pas encore créé. L’emplacement proposé est `europe-west4` (Pays-Bas), proche du serveur Railway ; ce choix irréversible attend une validation explicite. Le Cameroun correspond au pays de paiement AdMob demandé, pas au lieu de stockage choisi pour les données. Ajouter les empreintes de signature Android quand nécessaire.
+
+Après création de Firestore, publier les règles : `firebase deploy --only firestore:rules --project parole-6a0bf`. Aucun bucket Storage n’est nécessaire pour cette version. Si un bucket est créé ultérieurement, publier aussi les règles Storage fermées du dépôt.
 
 Les écritures Firestore passent exclusivement par le serveur Firebase Admin. Les clients authentifiés ne lisent que leurs propres données. Le bucket Storage reste fermé : cette version traite PDF/audio en mémoire et conserve les fichiers audio localement.
 
-Créer un compte de service dédié pour le backend avec les droits nécessaires à Firestore et Firebase Authentication, sans rôle propriétaire. Enregistrer le JSON **comme secret serveur**, jamais dans le dépôt.
+Le compte Firebase Admin SDK du projet existe déjà ; aucune clé privée n’a été générée pour cette intégration. Sa génération puis son enregistrement dans `Parole/parole-api` sur Railway attendent une autorisation explicite. Vérifier ses droits Firebase Authentication et Firestore et les limiter aux besoins du serveur. Enregistrer le JSON **comme secret serveur**, jamais dans le dépôt ou l’APK. Les rôles IAM de production n’ont pas encore été audités.
+
+Configurer ensemble les quatre variables Firebase ci-dessous : le backend ne doit pas distribuer une configuration Android incomplète.
 
 ## Variables serveur
 
@@ -27,7 +31,7 @@ Créer un compte de service dédié pour le backend avec les droits nécessaires
 
 Le `Dockerfile` racine construit le backend. Lier le dépôt, branche `main`, sans sous-répertoire. Configurer `/health` comme healthcheck, ajouter les variables puis générer un domaine HTTPS. Les données persistantes sont dans Firestore, pas sur le disque Railway.
 
-Le service `Parole/parole-api` est déployé à l’adresse https://parole-api-production.up.railway.app et suit déjà `main`. Les variables Groq sont configurées ; Firebase reste à activer. Un healthcheck réussi ne prouve pas que Firebase fonctionne : contrôler `/ready`, puis une véritable inscription et une séance.
+Le service `Parole/parole-api` est déployé à l’adresse https://parole-api-production.up.railway.app et suit déjà `main`. Les variables Groq sont configurées ; la connexion du serveur au projet Firebase reste à activer. Un healthcheck réussi ne prouve pas que Firebase fonctionne : contrôler `/ready`, puis une véritable inscription et une séance.
 
 La CI bêta utilise cette adresse par défaut. Elle peut être remplacée via `PAROLE_API_URL` au build ou dans Profil > Connexion. Les builds locaux sans cette variable restent sans serveur par défaut, notamment pour les tests isolés.
 
@@ -41,6 +45,8 @@ Secret facultatif : `GOOGLE_SERVICES_JSON` (JSON intégral, non encodé en base6
 Pour une release signée : `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`, `GOOGLE_SERVICES_JSON` ; variables `PAROLE_API_URL`, `ADMOB_APP_ID`, `ADMOB_REWARDED_ID`. Le workflow refuse une release sans configuration.
 
 ## AdMob
+
+Le pays de paiement retenu est le **Cameroun**. L’inscription réelle attend un titulaire éligible et un compte validé ; aucun identifiant publicitaire de production n’a été créé.
 
 Les builds beta utilisent les identifiants Google de test ; ils ne rapportent pas d’argent. Ne jamais cliquer sur ses propres annonces réelles.
 

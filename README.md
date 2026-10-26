@@ -4,8 +4,12 @@
 
 Application Android native **Kotlin + Jetpack Compose**, avec jury Groq, authentification et persistance Firebase, et publicités récompensées AdMob. Thèmes clair, sombre et système.
 
+> **Bêta 1.1.0** : interface installable et tests CI disponibles. Firebase Auth est activé ; Firestore et la liaison privilégiée du serveur restent à finaliser. Les séances IA en production ne sont donc pas encore disponibles. AdMob utilise des annonces de test.
+
 ## Parcours implémenté
 
+- Splash natif animé, sans délai artificiel ; adaptation claire/sombre et réduction des animations.
+- Onboarding en trois étapes, utilisable hors ligne : niveau et jury mémorisés, retour, passage et reprise depuis le profil.
 - Inscription/connexion e-mail, réinitialisation du mot de passe.
 - Import PDF textuel (80 pages, 10 Mo) ou texte collé (100 000 caractères).
 - Préparation BTS/Licence/Master, jury bienveillant/exigeant.
@@ -75,6 +79,14 @@ JDK 21 est nécessaire pour les émulateurs Firebase. Le build Android utilise J
 ## Captures de l’interface native
 
 Captures produites par les tests Android sur émulateur. Les projets et bilans visibles ici sont des données fictives de test. L’application livrée démarre sans historique prérempli.
+
+| Onboarding clair | Onboarding sombre |
+| --- | --- |
+| ![La voix](docs/screenshots/09-welcome-voice-light.png) | ![Le premier pas](docs/screenshots/11-welcome-start-dark.png) |
+
+| Choix du jury clair | Choix du jury sombre |
+| --- | --- |
+| ![Jury clair](docs/screenshots/10-welcome-jury-light.png) | ![Jury sombre](docs/screenshots/10-welcome-jury-dark.png) |
 
 | Accueil clair | Accueil sombre |
 | --- | --- |
