@@ -71,7 +71,8 @@ fun ParoleWelcome(
                     }
                     Crossfade(targetState = page, animationSpec = tween(if (motionEnabled) 240 else 0), label = "welcome_page", modifier = Modifier.weight(1f)) { current ->
                         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp)) {
-                            VoiceSculpture(current, heroHeight, animate)
+                            // Leave both jury choices visible on a standard phone without scrolling.
+                            VoiceSculpture(current, if (current == 1) heroHeight * .75f else heroHeight, animate)
                             Text("0${current + 1}  /  03   ·   " + listOf("L’ÉLAN", "LE DIALOGUE", "LE PREMIER PAS")[current], color = c.onSurfaceVariant, style = MaterialTheme.typography.labelMedium, letterSpacing = 1.3.sp, modifier = Modifier.padding(top = 12.dp, bottom = 14.dp).semantics { contentDescription = "Étape ${current + 1} sur 3" })
                             when (current) {
                                 0 -> {
